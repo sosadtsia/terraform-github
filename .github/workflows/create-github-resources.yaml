@@ -23,12 +23,8 @@ concurrency:
 jobs:
   create:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-      repository-projects: write
-      actions: write
+    permissions: write-all
+
 
     steps:
       - name: Get current time stamp
