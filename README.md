@@ -104,8 +104,9 @@ repositories = {
 ├── main.tf                 # Main configuration and provider setup
 ├── variables.tf            # Input variables
 ├── terraform.tfvars        # Variable values (customize for your needs)
-├── tfstate/                # Terraform state files (gitignored)
-│   └── .gitkeep           # Ensures directory structure in git
+├── tfstate/                # Terraform state files
+│   ├── .gitkeep           # Ensures directory structure in git
+│   └── terraform.tfstate  # State file (committed by CI/CD)
 ├── repositories/           # Repository management module
 │   ├── main.tf            # Module requirements
 │   ├── variables.tf       # Module variables
@@ -161,7 +162,7 @@ The repository includes GitHub Actions workflows for:
 ## Security Considerations
 
 - **Token Security**: Use GitHub Apps instead of personal access tokens when possible
-- **State Management**: Uses local state stored in `tfstate/` directory (consider remote backend for production)
+- **State Management**: State file is committed to repository by CI/CD workflow (consider remote backend for production)
 - **Secret Scanning**: Gitleaks integration prevents accidental secret commits
 - **Branch Protection**: All protected branches require review and status checks
 
@@ -170,7 +171,7 @@ The repository includes GitHub Actions workflows for:
 ### Common Issues
 
 1. **Token Permissions**: Ensure your GitHub token has `repo` and `admin:org` permissions
-2. **State Management**: Currently uses local state; for production consider remote backend
+2. **State Management**: State file is automatically committed by CI/CD workflow
 3. **Concurrent Runs**: Use the concurrency group to prevent simultaneous runs
 4. **Provider Version**: Ensure you're using compatible provider versions
 

@@ -7,7 +7,7 @@
 *.tfstate.backup
 
 # Ignore state files in tfstate directory but keep the directory structure
-tfstate/*.tfstate
+# Note: terraform.tfstate is committed by GitHub Actions workflow
 tfstate/*.tfstate.*
 tfstate/*.backup
 

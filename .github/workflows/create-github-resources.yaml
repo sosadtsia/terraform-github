@@ -28,6 +28,7 @@ jobs:
       pull-requests: write
       issues: write
       repository-projects: write
+      actions: write
 
     steps:
       - name: Get current time stamp
@@ -66,8 +67,12 @@ jobs:
         with:
           tofu_version: 1.10.3
 
-      - name: Check for existing state
+      - name: Pull latest state from repository
         run: |
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
           if [ -f tfstate/terraform.tfstate ]; then
             echo "State file present"
             echo "TFSTATE_EXISTS=true" >> $GITHUB_ENV
@@ -109,6 +114,23 @@ jobs:
           if [ -f tfstate/terraform.tfstate ]; then
             echo "State file size: $(du -h tfstate/terraform.tfstate | cut -f1)"
             echo "Resources in state: $(tofu state list | wc -l)"
+          fi
+
+      - name: Commit updated state file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Add the state file
+          git add tfstate/terraform.tfstate
+
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "No changes to terraform state file"
+          else
+            echo "Committing terraform state file changes"
+            git commit -m "Update terraform state [skip ci]"
+            git push origin main
           fi
 
 
