@@ -1,0 +1,64 @@
+##
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and customize for your needs
+##
+
+# GitHub repositories configuration
+repositories = {
+  # Example repository with minimal configuration
+  example_minimal = {
+    name                 = "example-minimal"
+    description          = "A minimal example repository"
+    repository_auto_init = true
+    branch_deletion      = true
+    main_branch          = "main"
+    additional_branches  = []
+    topics               = ["example", "minimal"]
+  }
+
+  # Example repository with full configuration
+  example_full = {
+    name                 = "example-full-featured"
+    description          = "A full-featured example repository with all options"
+    repository_auto_init = true
+    branch_deletion      = true
+    main_branch          = "main"
+    additional_branches  = ["develop", "staging", "feature"]
+    topics               = ["terraform", "example", "full-featured"]
+
+    # Branch protection settings
+    allow_auto_merge                = true
+    required_status_checks          = ["ci/build", "ci/test", "ci/security"]
+    required_approving_review_count = 2
+    dismissal_restrictions          = []  # Add team IDs if needed
+    pull_request_bypassers         = []  # Add team IDs if needed
+  }
+
+  # Example Terraform module repository
+  terraform_module = {
+    name                 = "terraform-module-example"
+    description          = "An example Terraform module repository"
+    repository_auto_init = true
+    branch_deletion      = true
+    main_branch          = "main"
+    additional_branches  = ["develop"]
+    topics               = ["terraform", "module", "infrastructure"]
+
+    # Stricter protection for module repositories
+    allow_auto_merge                = false
+    required_status_checks          = ["ci/validate", "ci/test", "ci/security"]
+    required_approving_review_count = 1
+    dismissal_restrictions          = []
+    pull_request_bypassers         = []
+  }
+}
+
+# Additional tags for resources (optional)
+tags = {
+  Environment = "production"
+  ManagedBy   = "terraform"
+  Owner       = "platform-team"
+}
+
+# GitHub token should be set as environment variable GH_TOKEN
+# github_token = "your-github-token"  # Not recommended - use environment variable instead

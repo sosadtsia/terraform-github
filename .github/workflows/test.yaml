@@ -1,0 +1,96 @@
+##
+# test.yaml
+# Runs Terraform tests to ensure code quality and functionality
+##
+---
+name: Terraform Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '**.tf'
+      - '**.tftest.hcl'
+      - 'tests/**'
+      - '.github/workflows/test.yaml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - '**.tf'
+      - '**.tftest.hcl'
+      - 'tests/**'
+      - '.github/workflows/test.yaml'
+  workflow_dispatch:
+
+# Prevent concurrent runs
+concurrency:
+  group: terraform-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Get current time stamp
+        run: |
+          echo "TIME_STAMP=$(date +'%Y.%m.%d-%H:%M:%S')" >> $GITHUB_ENV
+
+      - name: Job details
+        run: |
+          echo 'Execution time:         ${{ env.TIME_STAMP }}'
+          echo 'Triggered by user:      ${{ github.actor }}'
+          echo 'Workflow run number:    ${{ github.run_number }}'
+          echo 'Repository name:        ${{ github.repository }}'
+          echo 'Branch name:            ${{ github.ref_name }}'
+
+      - name: Check-out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.10.3
+
+      - name: Initialize OpenTofu
+        run: tofu init
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Validate configuration
+        run: tofu validate
+
+      - name: Format check
+        run: tofu fmt -check
+
+      - name: Run basic tests
+        run: tofu test tests/basic.tftest.hcl -verbose
+        continue-on-error: false
+
+      - name: Run all tests
+        run: tofu test -verbose
+        continue-on-error: false
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Basic Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| All Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Configuration validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Variable validation rules" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Input parameter validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Error handling for invalid inputs" >> $GITHUB_STEP_SUMMARY

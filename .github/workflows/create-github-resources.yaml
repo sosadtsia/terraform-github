@@ -1,0 +1,123 @@
+##
+# create-github-resources.yaml
+# Creates our github resources
+##
+---
+name: Creates Github resources
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - '.github/workflows/create-github-resources.yaml'
+  workflow_dispatch:
+
+# Prevent concurrent runs to avoid terraform state conflicts
+concurrency:
+  group: terraform-github-resources
+  cancel-in-progress: false
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      repository-projects: write
+
+    steps:
+      - name: Get current time stamp
+        run: |
+          echo "TIME_STAMP=$(date +'%Y.%m.%d-%H:%M:%S')" >> $GITHUB_ENV
+          echo "TAG_PREFIX=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+          echo "NEW_TAG=$(date +'%Y-%m-%d_%H-%M-%S')_${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: Job details
+        run: |
+          echo 'Execution time:         ${{ env.TIME_STAMP }}'
+          echo 'Triggered by user:      ${{ github.actor }}'
+          echo 'User account ID:        ${{ github.actor_id }}'
+          echo 'Workflow run number:    ${{ github.run_number }}'
+          echo 'Repository name:        ${{ github.repository }}'
+          echo 'Branch name:            ${{ github.ref_name }}'
+          echo 'Logs retention:         ${{ github.retention_days }} days'
+
+      - name: Get token
+        id: app-token
+        continue-on-error: false
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Check-out the repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.10.3
+
+      - name: Pull latest tfstate (if exists)
+        run: |
+          git fetch origin main
+          git checkout main
+          if [ -f terraform.tfstate ]; then
+            echo "State file present"
+            echo "TFSTATE_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "No state file found"
+            echo "TFSTATE_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Init
+        run: tofu init
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Validate
+        run: tofu validate
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Run tests
+        run: tofu test -verbose
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Plan
+        run: |
+          tofu plan -out=tfplan
+          tofu show -no-color tfplan > tfplan.txt
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Apply
+        run: tofu apply -auto-approve tfplan
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Commit updated tfstate
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Check if there are changes to commit
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git add terraform.tfstate
+            git commit -m "Update tfstate [skip ci]" || echo "No changes to commit"
+            git push origin main
+          fi
+
+
+
