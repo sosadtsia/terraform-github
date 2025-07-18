@@ -45,5 +45,4 @@ module "github_repositories" {
   required_approving_review_count = lookup(each.value, "required_approving_review_count", 1)
   dismissal_restrictions          = lookup(each.value, "dismissal_restrictions", [])
   pull_request_bypassers          = lookup(each.value, "pull_request_bypassers", [])
-  manage_files                    = lookup(each.value, "manage_files", true)
 }
