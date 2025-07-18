@@ -25,7 +25,7 @@ resource "github_repository_file" "renovate-json5" {
   for_each = toset(local.repos_list)
 
   repository          = each.value
-  branch             = "master"
+  branch             = "main"
   file               = local.renovate_files["renovate.json5"].path
   content            = file(local.renovate_files["renovate.json5"].source)
   commit_message     = "Update ${each.key} configuration"
@@ -36,7 +36,7 @@ resource "github_repository_file" "call-ci-renovate" {
   for_each = toset(local.repos_list)
 
   repository          = each.value
-  branch             = "master"
+  branch             = "main"
   file               = local.renovate_files["call-ci-renovate"].path
   content            = file(local.renovate_files["call-ci-renovate"].source)
   commit_message     = "Update ${each.key} configuration"
