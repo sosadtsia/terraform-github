@@ -1,8 +1,3 @@
-# Repository file management is disabled for testing
-# This file manages repository files like LICENSE, README, workflows, etc.
-# Uncomment and configure files/ directory to enable this functionality
-
-/*
 locals {
   renovate_files = {
     "renovate.json5" = {
@@ -77,4 +72,3 @@ resource "github_repository_file" "license" {
   commit_message     = "Add Apache 2.0 License to ${each.key}"
   overwrite_on_create = true
 }
-*/

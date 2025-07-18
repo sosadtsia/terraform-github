@@ -99,7 +99,6 @@ jobs:
       - name: Plan
         run: |
           tofu plan -out=tfplan
-          tofu show -no-color tfplan > tfplan.txt
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
