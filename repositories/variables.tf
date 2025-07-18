@@ -75,3 +75,9 @@ variable "required_approving_review_count" {
   default     = 1
   description = "Number of required approving reviews."
 }
+
+variable "manage_files" {
+  type        = bool
+  default     = true
+  description = "Whether to manage repository files (renovate config, workflows, etc.)"
+}
