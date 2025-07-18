@@ -14,6 +14,15 @@ on:
       - '**.tfvars'
       - '.github/workflows/create-github-resources.yaml'
   workflow_dispatch:
+    inputs:
+      apply_changes:
+        description: 'Actually apply terraform changes (creates real resources)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 # Prevent concurrent runs to avoid terraform state conflicts
 concurrency:
@@ -81,6 +90,14 @@ jobs:
             echo "TFSTATE_EXISTS=false" >> $GITHUB_ENV
           fi
 
+      - name: Setup safe configuration
+        run: |
+          echo "Setting up safe configuration for workflow..."
+          # Use workflow-specific configuration to avoid conflicts
+          cp terraform.tfvars.workflow terraform.tfvars
+          echo "Using workflow configuration:"
+          cat terraform.tfvars
+
       - name: Init
         run: tofu init
         env:
@@ -96,18 +113,71 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
+      - name: Debug GitHub API access
+        run: |
+          echo "Testing GitHub API access..."
+          echo "Organization: sosadtsia"
+
+          # Test basic API access
+          if curl -s -f -H "Authorization: token $GH_TOKEN" https://api.github.com/user > /dev/null; then
+            echo "✅ GitHub API access working"
+          else
+            echo "❌ GitHub API access failed"
+          fi
+
+          # Test organization access
+          if curl -s -f -H "Authorization: token $GH_TOKEN" https://api.github.com/orgs/sosadtsia > /dev/null; then
+            echo "✅ Organization access working"
+          else
+            echo "❌ Organization access failed - this might cause issues"
+          fi
+
+          # Test repository search (this is what's causing the hang)
+          echo "Testing repository search..."
+          timeout 30 curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/search/repositories?q=org:sosadtsia&per_page=5" || {
+            echo "❌ Repository search timed out or failed"
+            echo "This is likely what's causing the plan step to hang"
+          }
+
+          # Check if the test repository already exists
+          echo "Checking if workflow-test-repo already exists..."
+          if curl -s -f -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/sosadtsia/workflow-test-repo > /dev/null; then
+            echo "⚠️  workflow-test-repo already exists - plan may try to import it"
+          else
+            echo "✅ workflow-test-repo does not exist - safe to create"
+          fi
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
       - name: Plan
         run: |
-          tofu plan -out=tfplan
+          echo "Starting terraform plan with timeout..."
+          timeout 300 tofu plan -out=tfplan || {
+            echo "Plan step timed out or failed"
+            echo "This might be due to API rate limiting or authentication issues"
+            exit 1
+          }
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Apply
-        run: tofu apply -auto-approve tfplan
+        if: github.event.inputs.apply_changes == 'true'
+        run: |
+          echo "WARNING: This will create real GitHub resources!"
+          echo "Applying terraform plan..."
+          tofu apply -auto-approve tfplan
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
+      - name: Skip Apply
+        if: github.event.inputs.apply_changes != 'true'
+        run: |
+          echo "Skipping apply step - plan-only mode"
+          echo "To actually create resources, re-run with 'apply_changes' set to 'true'"
+          echo "This prevents accidental resource creation"
+
       - name: Show state info
+        if: github.event.inputs.apply_changes == 'true'
         run: |
           echo "Terraform apply completed successfully"
           if [ -f tfstate/terraform.tfstate ]; then
@@ -116,6 +186,7 @@ jobs:
           fi
 
       - name: Commit updated state file
+        if: github.event.inputs.apply_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
