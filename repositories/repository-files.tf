@@ -12,14 +12,6 @@ locals {
       path    = ".github/workflows/call-linter.yaml"
       source  = "${path.root}/files/renovate-config/.github/workflows/call-linter.yaml"
     }
-    "readme" = {
-      path    = "README.md"
-      source  = "${path.root}/files/README.md"
-    }
-    "license" = {
-      path    = "LICENSE"
-      source  = "${path.root}/files/LICENSE"
-    }
   }
   repos_list = data.github_repositories.repos.names
 }
@@ -48,27 +40,5 @@ resource "github_repository_file" "call-ci-renovate" {
   file               = local.renovate_files["call-ci-renovate"].path
   content            = file(local.renovate_files["call-ci-renovate"].source)
   commit_message     = "Update ${each.key} configuration"
-  overwrite_on_create = true
-}
-
-resource "github_repository_file" "readme" {
-  for_each = toset(local.repos_list)
-
-  repository          = each.value
-  branch             = "master"
-  file               = local.renovate_files["readme"].path
-  content            = file(local.renovate_files["readme"].source)
-  commit_message     = "Add README.md to ${each.key}"
-  overwrite_on_create = true
-}
-
-resource "github_repository_file" "license" {
-  for_each = toset(local.repos_list)
-
-  repository          = each.value
-  branch             = "master"
-  file               = local.renovate_files["license"].path
-  content            = file(local.renovate_files["license"].source)
-  commit_message     = "Add Apache 2.0 License to ${each.key}"
   overwrite_on_create = true
 }
