@@ -66,11 +66,9 @@ jobs:
         with:
           tofu_version: 1.10.3
 
-      - name: Pull latest tfstate (if exists)
+      - name: Check for existing state
         run: |
-          git fetch origin main
-          git checkout main
-          if [ -f terraform.tfstate ]; then
+          if [ -f tfstate/terraform.tfstate ]; then
             echo "State file present"
             echo "TFSTATE_EXISTS=true" >> $GITHUB_ENV
           else
@@ -105,18 +103,12 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      - name: Commit updated tfstate
+      - name: Show state info
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Check if there are changes to commit
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git add terraform.tfstate
-            git commit -m "Update tfstate [skip ci]" || echo "No changes to commit"
-            git push origin main
+          echo "Terraform apply completed successfully"
+          if [ -f tfstate/terraform.tfstate ]; then
+            echo "State file size: $(du -h tfstate/terraform.tfstate | cut -f1)"
+            echo "Resources in state: $(tofu state list | wc -l)"
           fi
 
 

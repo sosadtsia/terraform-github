@@ -104,12 +104,17 @@ repositories = {
 ├── main.tf                 # Main configuration and provider setup
 ├── variables.tf            # Input variables
 ├── terraform.tfvars        # Variable values (customize for your needs)
+├── tfstate/                # Terraform state files (gitignored)
+│   └── .gitkeep           # Ensures directory structure in git
 ├── repositories/           # Repository management module
 │   ├── main.tf            # Module requirements
 │   ├── variables.tf       # Module variables
 │   ├── repository.tf      # Repository resources
 │   ├── repository-files.tf # File management
 │   └── outputs.tf         # Module outputs
+├── tests/                 # Test files
+│   ├── README.md          # Testing documentation
+│   └── basic.tftest.hcl   # Basic configuration tests
 ├── files/                 # Template files for repositories
 │   ├── LICENSE           # Apache 2.0 License
 │   ├── README.md         # Template README
@@ -156,7 +161,7 @@ The repository includes GitHub Actions workflows for:
 ## Security Considerations
 
 - **Token Security**: Use GitHub Apps instead of personal access tokens when possible
-- **State Management**: Terraform state is stored using HTTP backend
+- **State Management**: Uses local state stored in `tfstate/` directory (consider remote backend for production)
 - **Secret Scanning**: Gitleaks integration prevents accidental secret commits
 - **Branch Protection**: All protected branches require review and status checks
 
@@ -165,8 +170,9 @@ The repository includes GitHub Actions workflows for:
 ### Common Issues
 
 1. **Token Permissions**: Ensure your GitHub token has `repo` and `admin:org` permissions
-2. **State Conflicts**: Use the concurrency group to prevent simultaneous runs
-3. **Provider Version**: Ensure you're using compatible provider versions
+2. **State Management**: Currently uses local state; for production consider remote backend
+3. **Concurrent Runs**: Use the concurrency group to prevent simultaneous runs
+4. **Provider Version**: Ensure you're using compatible provider versions
 
 ### Validation
 

@@ -1,0 +1,2 @@
+# This file ensures the tfstate directory is maintained in git
+# The actual terraform.tfstate file is gitignored

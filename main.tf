@@ -19,16 +19,12 @@ provider "github" {
   token = var.github_token
 }
 
+# Using local state stored in tfstate directory
 terraform {
-  backend "http" {
-    address        = "https://api.github.com/repos/sosadtsia/terraform-github/tfstate/terraform.tfstate"
-    lock_address   = "https://api.github.com/repos/sosadtsia/terraform-github/tfstate/terraform.tfstate.lock"
-    unlock_address = "https://api.github.com/repos/sosadtsia/terraform-github/tfstate/terraform.tfstate.lock"
-    username       = "sosadtsia"
-    password       = var.github_token
+  backend "local" {
+    path = "tfstate/terraform.tfstate"
   }
 }
-
 
 module "github_repositories" {
   for_each = { for key, repo in var.repositories : key => repo }

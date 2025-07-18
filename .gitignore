@@ -4,6 +4,12 @@
 # .tfstate files
 *.tfstate
 *.tfstate.*
+*.tfstate.backup
+
+# Ignore state files in tfstate directory but keep the directory structure
+tfstate/*.tfstate
+tfstate/*.tfstate.*
+tfstate/*.backup
 
 # Crash log files
 crash.log
