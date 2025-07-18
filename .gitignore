@@ -11,6 +11,10 @@
 tfstate/*.tfstate.*
 tfstate/*.backup
 
+# Allow backup directory and its contents to be committed
+!tfstate/backups/
+!tfstate/backups/*.backup_*
+
 # Crash log files
 crash.log
 crash.*.log

@@ -14,15 +14,6 @@ on:
       - '**.tfvars'
       - '.github/workflows/create-github-resources.yaml'
   workflow_dispatch:
-    inputs:
-      apply_changes:
-        description: 'Actually apply terraform changes (creates real resources)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
 
 # Prevent concurrent runs to avoid terraform state conflicts
 concurrency:
@@ -121,24 +112,69 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      - name: Apply
-        if: github.event.inputs.apply_changes == 'true'
+      - name: Backup current state
         run: |
-          echo "WARNING: This will create real GitHub resources!"
+          echo "Creating state backup before apply..."
+
+          # Create backup directory if it doesn't exist
+          mkdir -p tfstate/backups
+
+          # Generate timestamp for backup
+          BACKUP_TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
+          BACKUP_FILE="tfstate/backups/terraform.tfstate.backup_${BACKUP_TIMESTAMP}"
+
+          if [ -f tfstate/terraform.tfstate ]; then
+            # Create backup with timestamp
+            cp tfstate/terraform.tfstate "$BACKUP_FILE"
+            echo "✅ State backup created: $BACKUP_FILE"
+
+            # Show backup info
+            echo "Backup file size: $(du -h "$BACKUP_FILE" | cut -f1)"
+
+            # Keep only last 5 backups to avoid repository bloat
+            echo "Cleaning up old backups (keeping last 5)..."
+            cd tfstate/backups
+            ls -t terraform.tfstate.backup_* 2>/dev/null | tail -n +6 | xargs rm -f
+            backup_count=$(ls -1 terraform.tfstate.backup_* 2>/dev/null | wc -l)
+            echo "Backups remaining: $backup_count"
+            cd ../..
+
+            # Set backup file path for later use
+            echo "BACKUP_FILE=$BACKUP_FILE" >> $GITHUB_ENV
+            echo "BACKUP_CREATED=true" >> $GITHUB_ENV
+          else
+            echo "⚠️  No existing state file to backup"
+            echo "BACKUP_CREATED=false" >> $GITHUB_ENV
+          fi
+
+      - name: Apply
+        run: |
           echo "Applying terraform plan..."
           tofu apply -auto-approve tfplan
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      - name: Skip Apply
-        if: github.event.inputs.apply_changes != 'true'
+      - name: Restore from backup on failure
+        if: failure() && env.BACKUP_CREATED == 'true'
         run: |
-          echo "Skipping apply step - plan-only mode"
-          echo "To actually create resources, re-run with 'apply_changes' set to 'true'"
-          echo "This prevents accidental resource creation"
+          echo "❌ Apply failed! Attempting to restore from backup..."
+          if [ -f "$BACKUP_FILE" ]; then
+            cp "$BACKUP_FILE" tfstate/terraform.tfstate
+            echo "✅ State restored from backup: $BACKUP_FILE"
+
+            # Verify restored state
+            if tofu validate && tofu state list >/dev/null 2>&1; then
+              echo "✅ Restored state is valid"
+            else
+              echo "❌ Restored state appears invalid"
+            fi
+          else
+            echo "❌ Backup file not found: $BACKUP_FILE"
+          fi
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Show state info
-        if: github.event.inputs.apply_changes == 'true'
         run: |
           echo "Terraform apply completed successfully"
           if [ -f tfstate/terraform.tfstate ]; then
@@ -146,23 +182,122 @@ jobs:
             echo "Resources in state: $(tofu state list | wc -l)"
           fi
 
+      - name: Validate state consistency
+        run: |
+          echo "Validating terraform state consistency..."
+
+          # Check if state file exists and is readable
+          if [ ! -f tfstate/terraform.tfstate ]; then
+            echo "❌ State file not found"
+            exit 1
+          fi
+
+          # Check if state file is valid JSON
+          if ! jq empty tfstate/terraform.tfstate 2>/dev/null; then
+            echo "❌ State file is not valid JSON"
+            exit 1
+          fi
+
+          # List resources in state
+          resource_count=$(tofu state list | wc -l)
+          echo "✅ State contains $resource_count resources"
+
+          if [ "$resource_count" -eq 0 ]; then
+            echo "⚠️  WARNING: State file contains no resources"
+          fi
+
+          # Show state resources
+          echo "Resources in state:"
+          tofu state list
+
+          # Verify state matches configuration (dry run)
+          echo "Checking if state matches current configuration..."
+          if tofu plan -detailed-exitcode > /dev/null 2>&1; then
+            echo "✅ State is consistent with configuration"
+          else
+            exit_code=$?
+            if [ $exit_code -eq 2 ]; then
+              echo "⚠️  WARNING: State differs from configuration (changes detected)"
+              echo "This might indicate drift or incomplete apply"
+            else
+              echo "❌ Error checking state consistency"
+              exit 1
+            fi
+          fi
+
+          # Check for sensitive data in state (basic check)
+          if grep -q '"sensitive":\s*true' tfstate/terraform.tfstate; then
+            echo "⚠️  WARNING: State contains sensitive data"
+          fi
+
+          # Check state file size (warn if too large)
+          state_size=$(stat -f%z tfstate/terraform.tfstate 2>/dev/null || stat -c%s tfstate/terraform.tfstate)
+          if [ "$state_size" -gt 1048576 ]; then  # 1MB
+            echo "⚠️  WARNING: State file is large ($(( state_size / 1024 ))KB)"
+          fi
+
+          # Advanced validation: Check state format version
+          state_version=$(jq -r '.version' tfstate/terraform.tfstate 2>/dev/null || echo "unknown")
+          echo "State format version: $state_version"
+
+          # Check if state has been modified recently
+          if [ -f tfstate/terraform.tfstate ]; then
+            last_modified=$(stat -f%m tfstate/terraform.tfstate 2>/dev/null || stat -c%Y tfstate/terraform.tfstate)
+            current_time=$(date +%s)
+            time_diff=$((current_time - last_modified))
+            if [ $time_diff -gt 300 ]; then  # 5 minutes
+              echo "⚠️  WARNING: State file was last modified ${time_diff}s ago"
+            fi
+          fi
+
+          # Verify state serial number (should increment)
+          state_serial=$(jq -r '.serial' tfstate/terraform.tfstate 2>/dev/null || echo "0")
+          echo "State serial number: $state_serial"
+
+          # Check for terraform version compatibility
+          terraform_version=$(jq -r '.terraform_version' tfstate/terraform.tfstate 2>/dev/null || echo "unknown")
+          echo "State created with Terraform version: $terraform_version"
+
+          echo "✅ State validation completed"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
       - name: Commit updated state file
-        if: github.event.inputs.apply_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Add the state file
+          # Add the state file and backups
           git add tfstate/terraform.tfstate
+          git add tfstate/backups/
 
           # Check if there are changes to commit
           if git diff --cached --quiet; then
-            echo "No changes to terraform state file"
+            echo "No changes to terraform state file or backups"
           else
-            echo "Committing terraform state file changes"
-            git commit -m "Update terraform state [skip ci]"
+            echo "Committing terraform state file and backup changes"
+
+            # Create detailed commit message
+            COMMIT_MSG="Update terraform state"
+            if [ "$BACKUP_CREATED" = "true" ]; then
+              COMMIT_MSG="$COMMIT_MSG with backup"
+            fi
+
+            # Add resource count if available
+            if [ -f tfstate/terraform.tfstate ]; then
+              RESOURCE_COUNT=$(tofu state list 2>/dev/null | wc -l | tr -d ' ')
+              COMMIT_MSG="$COMMIT_MSG ($RESOURCE_COUNT resources) [skip ci]"
+            else
+              COMMIT_MSG="$COMMIT_MSG [skip ci]"
+            fi
+
+            git commit -m "$COMMIT_MSG"
             git push origin main
+
+            echo "✅ State and backups committed successfully"
           fi
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
 
 
