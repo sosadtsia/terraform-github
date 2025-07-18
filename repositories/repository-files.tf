@@ -1,5 +1,5 @@
 locals {
-  renovate_files = {
+  files = {
     "renovate.json5" = {
       path    = ".github/renovate.json5"
       source  = "${path.root}/files/renovate-config/.github/renovate.json5"
@@ -13,32 +13,46 @@ locals {
       source  = "${path.root}/files/renovate-config/.github/workflows/call-linter.yaml"
     }
   }
-  repos_list = data.github_repositories.repos.names
-}
-
-data "github_repositories" "repos" {
-  query = "user:sosadtsia"
-  include_repo_id = true
 }
 
 resource "github_repository_file" "renovate-json5" {
-  for_each = toset(local.repos_list)
+  count = var.manage_files ? 1 : 0
 
-  repository          = each.value
+  repository          = var.name
   branch             = "main"
-  file               = local.renovate_files["renovate.json5"].path
-  content            = file(local.renovate_files["renovate.json5"].source)
-  commit_message     = "Update ${each.key} configuration"
+  file               = local.files["renovate.json5"].path
+  content            = file(local.files["renovate.json5"].source)
+  commit_message     = "Add renovate configuration"
   overwrite_on_create = true
+
+  # Ensure repository exists first
+  depends_on = [github_repository.repository]
 }
 
 resource "github_repository_file" "call-ci-renovate" {
-  for_each = toset(local.repos_list)
+  count = var.manage_files ? 1 : 0
 
-  repository          = each.value
+  repository          = var.name
   branch             = "main"
-  file               = local.renovate_files["call-ci-renovate"].path
-  content            = file(local.renovate_files["call-ci-renovate"].source)
-  commit_message     = "Update ${each.key} configuration"
+  file               = local.files["call-ci-renovate"].path
+  content            = file(local.files["call-ci-renovate"].source)
+  commit_message     = "Add CI renovate workflow"
   overwrite_on_create = true
+
+  # Ensure repository exists first
+  depends_on = [github_repository.repository]
+}
+
+resource "github_repository_file" "call-linter" {
+  count = var.manage_files ? 1 : 0
+
+  repository          = var.name
+  branch             = "main"
+  file               = local.files["call-linter"].path
+  content            = file(local.files["call-linter"].source)
+  commit_message     = "Add linter workflow"
+  overwrite_on_create = true
+
+  # Ensure repository exists first
+  depends_on = [github_repository.repository]
 }

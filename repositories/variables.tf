@@ -49,7 +49,13 @@ variable "pull_request_bypassers" {
 variable "repository_auto_init" {
   type        = bool
   default     = false
-  description = "Whether or not to produce an initial commit in the repository."
+  description = "Whether the repository should be automatically initialized."
+}
+
+variable "manage_files" {
+  type        = bool
+  default     = true
+  description = "Whether to manage repository files (renovate config, workflows, etc.)"
 }
 
 variable "topics" {

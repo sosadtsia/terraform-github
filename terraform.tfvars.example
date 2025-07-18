@@ -3,55 +3,64 @@
 # Copy this file to terraform.tfvars and customize for your needs
 ##
 
-# GitHub repositories configuration
+# Example repository configuration with file management
 repositories = {
-  # Example repository with minimal configuration
-  example_minimal = {
-    name                 = "example-minimal"
-    description          = "A minimal example repository"
-    repository_auto_init = true
-    branch_deletion      = true
-    main_branch          = "main"
-    additional_branches  = []
-    topics               = ["example", "minimal"]
-  }
-
-  # Example repository with full configuration
-  example_full = {
-    name                 = "example-full-featured"
-    description          = "A full-featured example repository with all options"
-    repository_auto_init = true
-    branch_deletion      = true
-    main_branch          = "main"
-    additional_branches  = ["develop", "staging", "feature"]
-    topics               = ["terraform", "example", "full-featured"]
-
-    # Branch protection settings
-    allow_auto_merge                = true
-    required_status_checks          = ["ci/build", "ci/test", "ci/security"]
-    required_approving_review_count = 2
-    dismissal_restrictions          = []  # Add team IDs if needed
-    pull_request_bypassers         = []  # Add team IDs if needed
-  }
-
-  # Example Terraform module repository
-  terraform_module = {
-    name                 = "terraform-module-example"
-    description          = "An example Terraform module repository"
+  "terraform-k8s-cluster" = {
+    name                 = "terraform-k8s-cluster"
+    description          = "Terraform configuration for Kubernetes cluster"
     repository_auto_init = true
     branch_deletion      = true
     main_branch          = "main"
     additional_branches  = ["develop"]
-    topics               = ["terraform", "module", "infrastructure"]
+    topics               = ["terraform", "kubernetes", "infrastructure"]
 
-    # Stricter protection for module repositories
+    # Repository files will be added AFTER repository creation
+    manage_files = true
+
+    # Optional: Advanced settings
     allow_auto_merge                = false
-    required_status_checks          = ["ci/validate", "ci/test", "ci/security"]
+    required_status_checks          = ["ci/terraform-validate", "ci/terraform-plan"]
     required_approving_review_count = 1
     dismissal_restrictions          = []
-    pull_request_bypassers         = []
+    pull_request_bypassers          = []
+  }
+
+  "shell-scripts" = {
+    name                 = "shell-scripts"
+    description          = "Collection of useful shell scripts"
+    repository_auto_init = true
+    branch_deletion      = true
+    main_branch          = "main"
+    additional_branches  = []
+    topics               = ["bash", "shell", "scripts", "automation"]
+
+    # Skip file management for this repository
+    manage_files = false
   }
 }
+
+# Example: Repository with comprehensive file management
+  "example-full-repo" = {
+    name                 = "example-full-repo"
+    description          = "Example repository with all features"
+    repository_auto_init = true
+    branch_deletion      = true
+    main_branch          = "main"
+    additional_branches  = ["develop", "staging"]
+    topics               = ["example", "template"]
+
+    # Files will be added with proper dependency ordering:
+    # 1. Repository created first
+    # 2. Branch protection rules applied
+    # 3. Repository files added last
+    manage_files = true
+
+    allow_auto_merge                = true
+    required_status_checks          = ["ci/build", "ci/test", "ci/security-scan"]
+    required_approving_review_count = 2
+    dismissal_restrictions          = []
+    pull_request_bypassers          = []
+  }
 
 # Additional tags for resources (optional)
 tags = {

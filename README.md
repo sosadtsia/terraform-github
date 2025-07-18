@@ -98,6 +98,47 @@ repositories = {
 - **Admin Enforcement**: Apply rules to administrators
 - **Force Push Protection**: Prevent force pushes to protected branches
 
+## Repository File Management
+
+This configuration automatically manages repository files (like renovate config and CI workflows) with proper dependency ordering:
+
+### Dependency Order
+1. **Repository Creation**: GitHub repositories are created first
+2. **Branch Protection**: Branch protection rules are applied
+3. **Repository Files**: Files are added to repositories last (only if `manage_files = true`)
+
+### Managed Files
+- `.github/renovate.json5` - Renovate configuration
+- `.github/workflows/call-ci-renovate.yaml` - CI workflow for Renovate
+- `.github/workflows/call-linter.yaml` - Linting workflow
+
+### Configuration Options
+
+```hcl
+repositories = {
+  "my-repo" = {
+    name = "my-repo"
+    description = "My repository"
+    # ... other settings ...
+
+    # Control file management
+    manage_files = true  # Default: true
+  }
+}
+```
+
+### File Management Control
+
+- `manage_files = true`: Repository files will be created/updated
+- `manage_files = false`: Skip file management for this repository
+
+This ensures that:
+- Files are only added to repositories that exist
+- Repository structure is established before files are added
+- You can selectively control which repositories get managed files
+
+## Terraform State Management
+
 ## Module Structure
 
 ```

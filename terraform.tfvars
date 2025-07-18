@@ -12,6 +12,7 @@ repositories = {
     main_branch          = "main"
     additional_branches  = ["test", "docs"]
     topics               = ["terraform", "kubernetes", "infrastructure"]
+    manage_files         = true
   }
   shell_scripts = {
     name                 = "shell-scripts"
@@ -21,5 +22,6 @@ repositories = {
     main_branch          = "main"
     additional_branches  = []
     topics               = ["shell", "scripts"]
+    manage_files         = true
   }
 }

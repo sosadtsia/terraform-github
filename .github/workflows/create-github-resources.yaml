@@ -180,6 +180,19 @@ jobs:
           if [ -f tfstate/terraform.tfstate ]; then
             echo "State file size: $(du -h tfstate/terraform.tfstate | cut -f1)"
             echo "Resources in state: $(tofu state list | wc -l)"
+
+            # Show dependency information
+            echo ""
+            echo "📋 Resource Creation Order:"
+            echo "1. ✅ GitHub repositories created first"
+            echo "2. ✅ Branch protection rules applied"
+            echo "3. ✅ Repository files added last (if manage_files=true)"
+            echo ""
+            echo "🔍 Resources created:"
+            tofu state list | grep -E "github_repository\." | head -5
+            echo ""
+            echo "📄 Repository files managed:"
+            tofu state list | grep -E "github_repository_file\." | head -5
           fi
 
       - name: Validate state consistency

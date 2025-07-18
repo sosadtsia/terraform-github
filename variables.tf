@@ -16,6 +16,9 @@ variable "repositories" {
     # The name of the main branch for the repository.
     main_branch = string,
 
+    # Whether or not to manage the repository files.
+    manage_files = bool,
+
     # A list of additional branches for the repository.
     additional_branches = list(string)
 

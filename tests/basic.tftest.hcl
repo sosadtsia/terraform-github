@@ -61,6 +61,7 @@ run "valid_configuration" {
         main_branch          = "main"
         additional_branches  = ["develop"]
         topics               = ["terraform", "test"]
+        manage_files         = true
       }
     }
     github_token = "test-token"
@@ -97,6 +98,7 @@ run "invalid_repository_name" {
         main_branch          = "main"
         additional_branches  = []
         topics               = []
+        manage_files         = true
       }
     }
     github_token = "test-token"
@@ -122,6 +124,7 @@ run "invalid_main_branch" {
         main_branch          = "invalid-branch"  # Not in allowed list
         additional_branches  = []
         topics               = []
+        manage_files         = true
       }
     }
     github_token = "test-token"
