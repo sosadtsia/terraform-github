@@ -90,12 +90,9 @@ jobs:
             echo "TFSTATE_EXISTS=false" >> $GITHUB_ENV
           fi
 
-      - name: Setup safe configuration
+      - name: Show current configuration
         run: |
-          echo "Setting up safe configuration for workflow..."
-          # Use workflow-specific configuration to avoid conflicts
-          cp terraform.tfvars.workflow terraform.tfvars
-          echo "Using workflow configuration:"
+          echo "Using main terraform.tfvars configuration:"
           cat terraform.tfvars
 
       - name: Init
@@ -110,42 +107,6 @@ jobs:
 
       - name: Run tests
         run: tofu test -verbose
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-      - name: Debug GitHub API access
-        run: |
-          echo "Testing GitHub API access..."
-          echo "Organization: sosadtsia"
-
-          # Test basic API access
-          if curl -s -f -H "Authorization: token $GH_TOKEN" https://api.github.com/user > /dev/null; then
-            echo "✅ GitHub API access working"
-          else
-            echo "❌ GitHub API access failed"
-          fi
-
-          # Test organization access
-          if curl -s -f -H "Authorization: token $GH_TOKEN" https://api.github.com/orgs/sosadtsia > /dev/null; then
-            echo "✅ Organization access working"
-          else
-            echo "❌ Organization access failed - this might cause issues"
-          fi
-
-          # Test repository search (this is what's causing the hang)
-          echo "Testing repository search..."
-          timeout 30 curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/search/repositories?q=org:sosadtsia&per_page=5" || {
-            echo "❌ Repository search timed out or failed"
-            echo "This is likely what's causing the plan step to hang"
-          }
-
-          # Check if the test repository already exists
-          echo "Checking if workflow-test-repo already exists..."
-          if curl -s -f -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/sosadtsia/workflow-test-repo > /dev/null; then
-            echo "⚠️  workflow-test-repo already exists - plan may try to import it"
-          else
-            echo "✅ workflow-test-repo does not exist - safe to create"
-          fi
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 

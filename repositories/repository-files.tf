@@ -25,7 +25,7 @@ locals {
 }
 
 data "github_repositories" "repos" {
-  query = "org:sosadtsia"
+  query = "user:sosadtsia"
   include_repo_id = true
 }
 
