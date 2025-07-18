@@ -52,10 +52,67 @@ jobs:
           private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
+      - name: Set GitHub token
+        id: github-token
+        run: |
+          # Use GitHub App token by default, fallback to PAT if needed
+          if [ -n "${{ steps.app-token.outputs.token }}" ]; then
+            echo "Using GitHub App token"
+            echo "token=${{ steps.app-token.outputs.token }}" >> $GITHUB_OUTPUT
+            echo "token_type=github_app" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "Using Personal Access Token"
+            echo "token=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
+            echo "token_type=personal_token" >> $GITHUB_OUTPUT
+          else
+            echo "❌ No valid token found"
+            exit 1
+          fi
+
+      - name: Debug token permissions
+        run: |
+          echo "Testing GitHub API permissions..."
+          echo "Token type: ${{ steps.github-token.outputs.token_type }}"
+
+          # Test user access
+          user_info=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/user)
+          username=$(echo "$user_info" | jq -r '.login // "ERROR"')
+          echo "Authenticated as: $username"
+
+          # Test repository creation permissions
+          echo "Testing repository creation permissions..."
+          response=$(curl -s -w "%{http_code}" -H "Authorization: token $GH_TOKEN" \
+            -X GET "https://api.github.com/user" -o /dev/null)
+
+          if [ "$response" = "200" ]; then
+            echo "✅ Token has user access"
+          else
+            echo "❌ Token lacks user access (HTTP $response)"
+            exit 1
+          fi
+
+          # Check if we can list repositories (indicates repo permissions)
+          repo_response=$(curl -s -w "%{http_code}" -H "Authorization: token $GH_TOKEN" \
+            -X GET "https://api.github.com/user/repos?per_page=1" -o /dev/null)
+
+          if [ "$repo_response" = "200" ]; then
+            echo "✅ Token has repository read access"
+          else
+            echo "❌ Token lacks repository access (HTTP $repo_response)"
+            exit 1
+          fi
+
+          echo ""
+          echo "🔍 To fix 403 errors when creating repositories:"
+          echo "1. Update GitHub App permissions (Administration: Read & Write)"
+          echo "2. Or add a Personal Access Token with 'repo' scope to secrets.GITHUB_TOKEN"
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+
       - name: Check-out the repository
         uses: actions/checkout@v4
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.github-token.outputs.token }}
           fetch-depth: 0
 
       - name: Set up OpenTofu
@@ -85,17 +142,17 @@ jobs:
       - name: Init
         run: tofu init
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
 
       - name: Validate
         run: tofu validate
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
 
       - name: Run tests
         run: tofu test -verbose
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
 
       - name: Plan
         run: |
@@ -106,7 +163,7 @@ jobs:
             exit 1
           }
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
 
       - name: Backup current state
         run: |
