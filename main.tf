@@ -16,7 +16,7 @@ terraform {
 
 provider "github" {
   owner = "sosadtsia"
-  token = var.github_token
+  app_auth {}
 }
 
 # Using local state stored in tfstate directory

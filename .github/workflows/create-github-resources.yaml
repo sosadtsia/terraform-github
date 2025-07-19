@@ -43,23 +43,34 @@ jobs:
           echo 'Branch name:            ${{ github.ref_name }}'
           echo 'Logs retention:         ${{ github.retention_days }} days'
 
+      # IMPORTANT: Make sure your GitHub App has Administration (read & write) permission for repositories
+      # or use a PAT with repo scope as shown in the alternative method below
       - name: Get token
         id: app-token
-        continue-on-error: false
+        continue-on-error: true  # Allow failure to try PAT as fallback
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ secrets.RENOVATE_APP_ID }}
           private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
+      # Alternative: Use a PAT token with repo scope
+      # Add a secret named REPO_PAT with a Personal Access Token that has repo scope
       - name: Set GitHub token
         id: github-token
         run: |
-          # Use GitHub App token by default, fallback to PAT if available
+          # First try GitHub App token
           if [ -n "${{ steps.app-token.outputs.token }}" ]; then
             echo "token=${{ steps.app-token.outputs.token }}" >> $GITHUB_OUTPUT
+            echo "Using GitHub App token"
+          # Then try PAT (Personal Access Token with repo scope)
+          elif [ -n "${{ secrets.REPO_PAT }}" ]; then
+            echo "token=${{ secrets.REPO_PAT }}" >> $GITHUB_OUTPUT
+            echo "Using Personal Access Token"
+          # Finally fallback to default GITHUB_TOKEN (limited permissions)
           elif [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
             echo "token=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
+            echo "Using default GITHUB_TOKEN (may have limited permissions)"
           else
             echo "❌ No valid token found"
             exit 1
@@ -119,7 +130,11 @@ jobs:
             exit 1
           }
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          # Set these if using GitHub App authentication with app_auth{} in provider
+          GITHUB_APP_ID: ${{ secrets.RENOVATE_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ secrets.RENOVATE_INSTALLATION_ID }}
+          GITHUB_APP_PEM_FILE_BASE64: ${{ secrets.RENOVATE_PRIVATE_KEY }}
 
       - name: Backup current state
         run: |
@@ -161,7 +176,11 @@ jobs:
           echo "Applying terraform plan..."
           tofu apply -auto-approve tfplan
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          # Set these if using GitHub App authentication with app_auth{} in provider
+          GITHUB_APP_ID: ${{ secrets.RENOVATE_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ secrets.RENOVATE_INSTALLATION_ID }}
+          GITHUB_APP_PEM_FILE_BASE64: ${{ secrets.RENOVATE_PRIVATE_KEY }}
 
       - name: Restore from backup on failure
         if: failure() && env.BACKUP_CREATED == 'true'
@@ -181,7 +200,7 @@ jobs:
             echo "❌ Backup file not found: $BACKUP_FILE"
           fi
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
 
       - name: Show state info
         run: |
@@ -282,7 +301,7 @@ jobs:
 
           echo "✅ State validation completed"
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
 
       - name: Commit updated state file
         run: |
@@ -319,7 +338,7 @@ jobs:
             echo "✅ State and backups committed successfully"
           fi
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
 
 
 

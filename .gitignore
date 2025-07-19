@@ -15,6 +15,10 @@ tfstate/*.backup
 !tfstate/backups/
 !tfstate/backups/*.backup_*
 
+# Local environment files with secrets
+.env
+*.env
+
 # Crash log files
 crash.log
 crash.*.log
