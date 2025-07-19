@@ -132,9 +132,9 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           # Set these if using GitHub App authentication with app_auth{} in provider
-          GITHUB_APP_ID: ${{ secrets.RENOVATE_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ secrets.RENOVATE_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE_BASE64: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          TF_VAR_github_app_id: ${{ secrets.RENOVATE_APP_ID }}
+          TF_VAR_github_app_installation_id: ${{ secrets.RENOVATE_INSTALLATION_ID }}
+          TF_VAR_github_app_pem_file: ${{ secrets.RENOVATE_PRIVATE_KEY }}
 
       - name: Backup current state
         run: |
@@ -178,9 +178,9 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           # Set these if using GitHub App authentication with app_auth{} in provider
-          GITHUB_APP_ID: ${{ secrets.RENOVATE_APP_ID }}
-          GITHUB_APP_INSTALLATION_ID: ${{ secrets.RENOVATE_INSTALLATION_ID }}
-          GITHUB_APP_PEM_FILE_BASE64: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          TF_VAR_github_app_id: ${{ secrets.RENOVATE_APP_ID }}
+          TF_VAR_github_app_installation_id: ${{ secrets.RENOVATE_INSTALLATION_ID }}
+          TF_VAR_github_app_pem_file: ${{ secrets.RENOVATE_PRIVATE_KEY }}
 
       - name: Restore from backup on failure
         if: failure() && env.BACKUP_CREATED == 'true'
