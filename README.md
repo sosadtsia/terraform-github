@@ -13,7 +13,7 @@ This repository uses OpenTofu/Terraform to manage GitHub repositories and their 
 ## Prerequisites
 
 - [OpenTofu](https://opentofu.org/) >= 1.10.3 or [Terraform](https://www.terraform.io/) >= 1.10.3
-- GitHub Personal Access Token or GitHub App with repository administration permissions
+- GitHub Personal Access Token with repository creation permissions
 - Access to the GitHub organization/user account
 
 ## Setup
@@ -26,7 +26,7 @@ This repository uses OpenTofu/Terraform to manage GitHub repositories and their 
 
 2. **Configure your GitHub token**:
    ```bash
-   export GH_TOKEN="your-github-token"
+   export TF_VAR_github_token="your-github-token"
    ```
 
 3. **Initialize Terraform**:
@@ -48,6 +48,31 @@ This repository uses OpenTofu/Terraform to manage GitHub repositories and their 
      }
    }
    ```
+
+## Authentication
+
+### Personal Access Token (Recommended)
+
+This repository is configured to use a GitHub Personal Access Token (PAT) for authentication:
+
+1. Create a GitHub PAT at https://github.com/settings/tokens
+2. Ensure it has the `repo` scope (full control of private repositories)
+3. Set it as an environment variable:
+   ```bash
+   export TF_VAR_github_token="your-github-token"
+   ```
+
+For CI/CD workflows:
+1. Add a repository secret named `GH_PAT` containing your GitHub Personal Access Token
+2. The workflow automatically uses this for authentication
+
+### Security Best Practices
+
+- Use tokens with the minimum required permissions
+- Set an appropriate expiration date (90 days recommended)
+- Store tokens securely in environment variables or secrets
+- Never commit tokens to the repository
+- Rotate tokens regularly
 
 ## Usage
 
@@ -194,7 +219,7 @@ See [tests/README.md](tests/README.md) for detailed testing documentation.
 The repository includes GitHub Actions workflows for:
 
 - **Terraform Planning**: Automated planning on pull requests
-- **Resource Creation**: Apply changes on main branch
+- **Resource Creation**: Apply changes on main branch using PAT authentication
 - **Testing**: Automated test execution on code changes
 - **Linting**: Code quality checks with tflint
 - **Security Scanning**: Secret detection with Gitleaks
@@ -202,7 +227,7 @@ The repository includes GitHub Actions workflows for:
 
 ## Security Considerations
 
-- **Token Security**: Use GitHub Apps instead of personal access tokens when possible
+- **Token Security**: Use a GitHub PAT with appropriate permissions and expiration
 - **State Management**: State file is committed to repository by CI/CD workflow (consider remote backend for production)
 - **Secret Scanning**: Gitleaks integration prevents accidental secret commits
 - **Branch Protection**: All protected branches require review and status checks
@@ -211,10 +236,19 @@ The repository includes GitHub Actions workflows for:
 
 ### Common Issues
 
-1. **Token Permissions**: Ensure your GitHub token has `repo` and `admin:org` permissions
+1. **Token Permissions**: Ensure your GitHub PAT has the `repo` scope for full repository access
 2. **State Management**: State file is automatically committed by CI/CD workflow
 3. **Concurrent Runs**: Use the concurrency group to prevent simultaneous runs
 4. **Provider Version**: Ensure you're using compatible provider versions
+
+### Authentication Issues
+
+If you encounter authentication errors:
+
+1. **Check Token Expiration**: Ensure your PAT hasn't expired
+2. **Verify Permissions**: Confirm the token has repo scope
+3. **Secret Configuration**: Make sure the `GH_PAT` secret is properly set in your repository
+4. **Environment Variables**: Verify `TF_VAR_github_token` is properly set when running locally
 
 ### Validation
 

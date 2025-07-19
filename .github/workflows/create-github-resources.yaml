@@ -300,9 +300,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Add the state file and backups
-          git add tfstate/terraform.tfstate
-          git add tfstate/backups/
+          # Force add the state file and backups to override .gitignore
+          git add -f tfstate/terraform.tfstate
+          git add -f tfstate/backups/
 
           # Check if there are changes to commit
           if git diff --cached --quiet; then
