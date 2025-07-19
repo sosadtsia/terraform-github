@@ -1,4 +1,4 @@
-# Minimal test for GitHub App authentication
+# Minimal test for GitHub Token authentication
 
 # Use built-in mocking
 mock_provider "github" {}
@@ -17,10 +17,8 @@ variables {
     }
   }
 
-  # GitHub App authentication variables
-  github_app_id = "mock-app-id"
-  github_app_installation_id = "mock-installation-id"
-  github_app_pem_file = "mock-pem-file"
+  # GitHub token for authentication
+  github_token = "mock-token"
 }
 
 run "basic_validation" {}

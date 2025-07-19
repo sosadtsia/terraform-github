@@ -59,26 +59,7 @@ variable "repositories" {
 
 variable "github_token" {
   type        = string
-  description = "Authenticate to GitHub using a personal access token"
-  default     = ""
-}
-
-# GitHub App authentication variables
-variable "github_app_id" {
-  type        = string
-  description = "The ID of the GitHub App"
-  default     = ""
-}
-
-variable "github_app_installation_id" {
-  type        = string
-  description = "The installation ID of the GitHub App"
-  default     = ""
-}
-
-variable "github_app_pem_file" {
-  type        = string
-  description = "The PEM file contents for the GitHub App"
+  description = "GitHub Personal Access Token (PAT) with repo scope"
   sensitive   = true
   default     = ""
 }

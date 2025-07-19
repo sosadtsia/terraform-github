@@ -54,20 +54,13 @@ jobs:
           private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-      # Alternative: Use a PAT token with repo scope
-      # Add a secret named REPO_PAT with a Personal Access Token that has repo scope
+      # Use PAT token directly
       - name: Set GitHub token
         id: github-token
         run: |
-          # First try GitHub App token
-          if [ -n "${{ steps.app-token.outputs.token }}" ]; then
-            echo "token=${{ steps.app-token.outputs.token }}" >> $GITHUB_OUTPUT
-            echo "Using GitHub App token"
-          # Then try PAT (Personal Access Token with repo scope)
-          elif [ -n "${{ secrets.REPO_PAT }}" ]; then
-            echo "token=${{ secrets.REPO_PAT }}" >> $GITHUB_OUTPUT
+          if [ -n "${{ secrets.GH_PAT }}" ]; then
+            echo "token=${{ secrets.GH_PAT }}" >> $GITHUB_OUTPUT
             echo "Using Personal Access Token"
-          # Finally fallback to default GITHUB_TOKEN (limited permissions)
           elif [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
             echo "token=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
             echo "Using default GITHUB_TOKEN (may have limited permissions)"
@@ -110,16 +103,19 @@ jobs:
         run: tofu init
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TF_VAR_github_token: ${{ steps.github-token.outputs.token }}
 
       - name: Validate
         run: tofu validate
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TF_VAR_github_token: ${{ steps.github-token.outputs.token }}
 
       - name: Run tests
         run: tofu test -verbose
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TF_VAR_github_token: ${{ steps.github-token.outputs.token }}
 
       - name: Plan
         run: |
@@ -131,10 +127,7 @@ jobs:
           }
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
-          # Set these if using GitHub App authentication with app_auth{} in provider
-          TF_VAR_github_app_id: ${{ secrets.RENOVATE_APP_ID }}
-          TF_VAR_github_app_installation_id: ${{ secrets.RENOVATE_INSTALLATION_ID }}
-          TF_VAR_github_app_pem_file: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          TF_VAR_github_token: ${{ steps.github-token.outputs.token }}
 
       - name: Backup current state
         run: |
@@ -177,10 +170,7 @@ jobs:
           tofu apply -auto-approve tfplan
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
-          # Set these if using GitHub App authentication with app_auth{} in provider
-          TF_VAR_github_app_id: ${{ secrets.RENOVATE_APP_ID }}
-          TF_VAR_github_app_installation_id: ${{ secrets.RENOVATE_INSTALLATION_ID }}
-          TF_VAR_github_app_pem_file: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          TF_VAR_github_token: ${{ steps.github-token.outputs.token }}
 
       - name: Restore from backup on failure
         if: failure() && env.BACKUP_CREATED == 'true'
@@ -201,6 +191,7 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TF_VAR_github_token: ${{ steps.github-token.outputs.token }}
 
       - name: Show state info
         run: |
@@ -302,6 +293,7 @@ jobs:
           echo "✅ State validation completed"
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TF_VAR_github_token: ${{ steps.github-token.outputs.token }}
 
       - name: Commit updated state file
         run: |
@@ -339,6 +331,7 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TF_VAR_github_token: ${{ steps.github-token.outputs.token }}
 
 
 
