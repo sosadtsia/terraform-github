@@ -24,16 +24,6 @@ repositories = {
     topics               = ["shell", "scripts"]
     manage_files         = true
   }
-  terraform_k8s_cluster = {
-    name                 = "terraform-k8s-cluster"
-    description          = "Terraform configuration for Kubernetes cluster setup"
-    repository_auto_init = true
-    branch_deletion      = true
-    main_branch          = "main"
-    additional_branches  = ["test", "docs"]
-    topics               = ["terraform", "kubernetes", "infrastructure"]
-    manage_files         = true
-  }
   terraform_aws_monitoring = {
     name                 = "terraform-aws-monitoring"
     description          = "Terraform configuration for AWS monitoring setup"
