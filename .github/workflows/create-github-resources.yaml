@@ -100,7 +100,22 @@ jobs:
           cat terraform.tfvars
 
       - name: Init
-        run: tofu init
+        run: |
+          # Verify state file before init
+          if [ "$TFSTATE_EXISTS" = "true" ]; then
+            echo "Using existing state file at tfstate/terraform.tfstate"
+            # Verify state file integrity
+            if jq empty tfstate/terraform.tfstate 2>/dev/null; then
+              echo "✅ State file is valid JSON"
+            else
+              echo "⚠️ WARNING: State file appears to be corrupted"
+            fi
+          else
+            echo "No existing state file found. A new one will be created."
+          fi
+
+          # Initialize with existing backend configuration in main.tf
+          tofu init
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           TF_VAR_github_token: ${{ steps.github-token.outputs.token }}
