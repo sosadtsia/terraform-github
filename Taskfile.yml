@@ -1,0 +1,68 @@
+version: '3'
+
+tasks:
+  fmt:
+    desc: Check OpenTofu formatting
+    cmds:
+      - tofu fmt -check
+    silent: false
+
+  validate:
+    desc: Validate OpenTofu configuration
+    cmds:
+      - tofu validate
+    silent: false
+
+  test:
+    desc: Run OpenTofu tests
+    cmds:
+      - tofu test
+    silent: false
+
+  tflint-init:
+    desc: Initialize TFLint plugins
+    cmds:
+      - tflint --init
+    silent: false
+
+  lint:
+    desc: Run tflint to catch errors, deprecated syntax, and enforce best practices
+    cmds:
+      - task: tflint-init
+      - tflint
+    silent: false
+
+  verify:
+    desc: Run all verification steps (format, validate, lint, test)
+    cmds:
+      - task: fmt
+      - task: validate
+      - task: lint
+      - task: test
+    silent: false
+
+  apply:
+    desc: Apply Terraform changes
+    cmds:
+      - tofu apply
+    silent: false
+
+  plan:
+    desc: Generate and show Terraform plan
+    cmds:
+      - tofu plan
+    silent: false
+
+  init:
+    desc: Initialize Terraform working directory
+    cmds:
+      - tofu init
+    silent: false
+
+  destroy:
+    desc: Destroy Terraform-managed infrastructure
+    cmds:
+      - echo "Are you sure you want to destroy all resources? Type 'yes' to confirm."
+      - read -r CONFIRM && [ "$CONFIRM" = "yes" ] && tofu destroy || echo "Destroy cancelled"
+    interactive: true
+    silent: false

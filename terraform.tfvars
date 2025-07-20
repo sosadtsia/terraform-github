@@ -24,13 +24,16 @@ repositories = {
     topics               = ["shell", "scripts"]
     manage_files         = true
   }
-  terraform_aws_monitoring = {
-    name                 = "terraform-aws-monitoring"
-    description          = "Terraform configuration for AWS monitoring setup"
+
+  aws_cost_optimization = {
+    name                 = "aws-cost-optimization"
+    description          = "AWS cost optimization"
     repository_auto_init = true
     branch_deletion      = true
     main_branch          = "main"
     additional_branches  = ["test", "docs"]
+    topics               = []
+    manage_files         = true
   }
 }
 
