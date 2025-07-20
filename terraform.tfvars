@@ -32,4 +32,5 @@ repositories = {
     main_branch          = "main"
     additional_branches  = ["test", "docs"]
   }
+}
 
