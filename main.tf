@@ -49,6 +49,6 @@ module "github_repositories" {
   allow_auto_merge                = lookup(each.value, "allow_auto_merge", false)
   required_status_checks          = lookup(each.value, "required_status_checks", [])
   required_approving_review_count = lookup(each.value, "required_approving_review_count", 1)
-  dismissal_restrictions          = lookup(each.value, "dismissal_restrictions", [data.github_user.sosadtsia.id])
-  pull_request_bypassers          = lookup(each.value, "pull_request_bypassers", [data.github_user.sosadtsia.id])
+  dismissal_restrictions          = lookup(each.value, "dismissal_restrictions", [data.github_user.sosadtsia.node_id])
+  pull_request_bypassers          = lookup(each.value, "pull_request_bypassers", [data.github_user.sosadtsia.node_id])
 }
