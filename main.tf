@@ -26,6 +26,11 @@ terraform {
   }
 }
 
+
+data "github_user" "sosadtsia" {
+  username = "sosadtsia"
+}
+
 module "github_repositories" {
   for_each = { for key, repo in var.repositories : key => repo }
 
@@ -40,9 +45,10 @@ module "github_repositories" {
   additional_branches  = each.value.additional_branches
   topics               = each.value.topics
 
+
   allow_auto_merge                = lookup(each.value, "allow_auto_merge", false)
   required_status_checks          = lookup(each.value, "required_status_checks", [])
   required_approving_review_count = lookup(each.value, "required_approving_review_count", 1)
-  dismissal_restrictions          = lookup(each.value, "dismissal_restrictions", [])
-  pull_request_bypassers          = lookup(each.value, "pull_request_bypassers", [])
+  dismissal_restrictions          = lookup(each.value, "dismissal_restrictions", [data.github_user.sosadtsia.id])
+  pull_request_bypassers          = lookup(each.value, "pull_request_bypassers", [data.github_user.sosadtsia.id])
 }
