@@ -35,9 +35,9 @@ data "github_user" "sosadtsia" {
 resource "github_actions_repository_permissions" "allow_actions" {
   for_each = { for key, repo in var.repositories : key => repo }
 
-  repository = each.value.name
+  repository      = each.value.name
   allowed_actions = "all"
-  enabled = true
+  enabled         = true
 }
 
 module "github_repositories" {

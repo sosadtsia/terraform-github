@@ -10,7 +10,7 @@ repositories = {
     repository_auto_init = true
     branch_deletion      = true
     main_branch          = "main"
-    additional_branches  = ["develop","production"]
+    additional_branches  = ["develop", "production"]
     topics               = ["aws"]
     manage_files         = true
   }
