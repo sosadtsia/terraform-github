@@ -31,6 +31,25 @@ data "github_user" "sosadtsia" {
   username = "sosadtsia"
 }
 
+resource "github_actions_repository_permissions" "allow_actions" {
+  for_each = { for key, repo in var.repositories : key => repo }
+
+  repository = each.value.name
+  allowed_actions = "all"
+  enabled = true
+}
+
+resource "github_repository_actions_settings" "allow_approvals" {
+  for_each = { for key, repo in var.repositories : key => repo }
+
+  repository = each.value.name
+  workflow_permissions {
+    contents = "write"
+    pull_requests = "write"
+    allow_approvals = true
+  }
+}
+
 module "github_repositories" {
   for_each = { for key, repo in var.repositories : key => repo }
 
@@ -47,6 +66,7 @@ module "github_repositories" {
 
 
   allow_auto_merge                = lookup(each.value, "allow_auto_merge", false)
+  allow_update_branch             = lookup(each.value, "allow_update_branch", true)
   required_status_checks          = lookup(each.value, "required_status_checks", [])
   required_approving_review_count = lookup(each.value, "required_approving_review_count", 1)
   dismissal_restrictions          = lookup(each.value, "dismissal_restrictions", [data.github_user.sosadtsia.node_id])

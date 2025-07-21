@@ -81,3 +81,15 @@ variable "manage_files" {
   default     = true
   description = "Whether to manage repository files (renovate config, workflows, etc.)"
 }
+
+variable "allow_update_branch" {
+  type        = bool
+  default     = true
+  description = "Whether to allow updating branches from the UI (important for GitHub Actions to create PRs)"
+}
+
+variable "allow_github_actions_to_approve_pull_requests" {
+  type        = bool
+  default     = false
+  description = "Whether to allow GitHub Actions to create and approve pull requests."
+}
