@@ -48,7 +48,7 @@ jobs:
       - name: Get token
         id: app-token
         continue-on-error: true  # Allow failure to try PAT as fallback
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.RENOVATE_APP_ID }}
           private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
