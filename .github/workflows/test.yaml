@@ -52,7 +52,7 @@ jobs:
           echo 'Branch name:            ${{ github.ref_name }}'
 
       - name: Check-out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
